@@ -1,0 +1,5 @@
+# ignore all terraform related files
+*.terraform
+*.hcl
+.idea
+*.zip
