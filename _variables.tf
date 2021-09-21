@@ -8,3 +8,7 @@ variable "region" {
   #   error_message = "Valid values for the region are: us-east-1, us-west-2, eu-west-1 or eu-central-1"
   # }
 }
+
+locals {
+  api_domain_name = "api.dmandyna.co.uk"
+}

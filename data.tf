@@ -42,7 +42,7 @@ data "archive_file" "visitor_counter" {
   output_path = "${path.module}/src.zip"
 }
 
-data "terraform_remote_state" "frontend" {
-  bucket = "dmandyna-tf-backend-eu-west-1"
-  key    = "projects/cloud-resume/frontend.tf"
+data "aws_route53_zone" "this" {
+  name         = "dmandyna.co.uk"
+  private_zone = false
 }

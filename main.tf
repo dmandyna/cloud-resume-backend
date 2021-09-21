@@ -79,8 +79,9 @@ resource "aws_cloudwatch_log_group" "gw" {
 }
 
 resource "aws_apigatewayv2_api" "this" {
-  name          = "cloudresume_lambda_gw"
-  protocol_type = "HTTP"
+  name                         = "cloudresume_lambda_gw"
+  protocol_type                = "HTTP"
+  disable_execute_api_endpoint = true
 }
 
 resource "aws_apigatewayv2_stage" "this" {
@@ -131,10 +132,67 @@ resource "aws_lambda_permission" "this" {
   source_arn = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
 }
 
+resource "aws_acm_certificate" "this" {
+  domain_name               = "dmandyna.co.uk"
+  subject_alternative_names = [local.api_domain_name]
+  validation_method         = "DNS"
+
+  tags = {
+    Name = "API Gateway SSL Cert"
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+resource "aws_route53_record" "validation" {
+  for_each = {
+    for entry in aws_acm_certificate.this.domain_validation_options : entry.domain_name => {
+      name   = entry.resource_record_name
+      record = entry.resource_record_value
+      type   = entry.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = data.aws_route53_zone.this.zone_id
+  lifecycle {
+    ignore_changes = [
+      name
+    ]
+  }
+}
+
 resource "aws_apigatewayv2_domain_name" "this" {
-  domain_name = "api.dmandyna.co.uk"
+  domain_name = local.api_domain_name
 
   domain_name_configuration {
-    certificate_arn = data.terraform_remote_state.outputs.acm_certificate_arn
+    certificate_arn = aws_acm_certificate.this.arn
+    endpoint_type   = "REGIONAL"
+    security_policy = "TLS_1_2"
   }
+}
+
+resource "aws_route53_record" "domain" {
+  allow_overwrite = true
+  name            = aws_apigatewayv2_domain_name.this.id
+  type            = "A"
+  zone_id         = data.aws_route53_zone.this.zone_id
+
+  alias {
+    name                   = aws_apigatewayv2_domain_name.this.domain_name_configuration[0].target_domain_name
+    zone_id                = aws_apigatewayv2_domain_name.this.domain_name_configuration[0].hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_apigatewayv2_api_mapping" "this" {
+  api_id      = aws_apigatewayv2_api.this.id
+  domain_name = aws_apigatewayv2_domain_name.this.id
+  stage       = aws_apigatewayv2_stage.this.id
 }
