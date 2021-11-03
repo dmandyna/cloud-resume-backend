@@ -56,6 +56,7 @@ def handler(event, context):
                     {"message": f"Sucessfully updated the visitor counter.", "newCounter": int(new_counter)}
                 ),
                 "headers": "application/json",
+                "context": context
             }
         else:
             return {
