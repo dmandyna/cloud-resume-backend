@@ -1,4 +1,4 @@
-resource "aws_dynamodb_table" "this" {
+resource "aws_dynamodb_table" "counter" {
   name           = "visitors_counter"
   billing_mode   = "PROVISIONED"
   read_capacity  = 5
@@ -12,11 +12,11 @@ resource "aws_dynamodb_table" "this" {
 }
 
 resource "aws_dynamodb_table_item" "this" {
-  table_name = aws_dynamodb_table.this.name
-  hash_key   = aws_dynamodb_table.this.hash_key
+  table_name = aws_dynamodb_table.counter.name
+  hash_key   = aws_dynamodb_table.counter.hash_key
   item       = <<ITEM
   {
-    "${aws_dynamodb_table.this.hash_key}": {"S": "cloud_resume"},
+    "${aws_dynamodb_table.counter.hash_key}": {"S": "cloud_resume"},
     "count": {"N": "0"}
   }
   ITEM
@@ -25,6 +25,24 @@ resource "aws_dynamodb_table_item" "this" {
     ignore_changes = [
       item
     ]
+  }
+}
+
+resource "aws_dynamodb_table" "tracker" {
+  name           = "visitors_tracker"
+  billing_mode   = "PROVISIONED"
+  read_capacity  = 5
+  write_capacity = 5
+  hash_key       = "ip_address"
+
+  attribute {
+    name = "ip_address"
+    type = "S"
+  }
+
+  ttl {
+    attribute_name = "expiry_date"
+    enabled        = true
   }
 }
 
@@ -52,9 +70,11 @@ resource "aws_lambda_function" "this" {
 
   environment {
     variables = {
-      TABLE_NAME = aws_dynamodb_table.this.id
-      HASH_KEY   = aws_dynamodb_table.this.hash_key
-      HASH_VALUE = "cloud_resume"
+      COUNTER_TABLE_NAME = aws_dynamodb_table.counter.id
+      COUNTER_HASH_KEY   = aws_dynamodb_table.counter.hash_key
+      COUNTER_HASH_VALUE = "cloud_resume"
+      TRACKER_TABLE_NAME = aws_dynamodb_table.tracker.id
+      TRACKER_HASH_KEY   = aws_dynamodb_table.tracker.hash_key
     }
   }
 
@@ -105,6 +125,12 @@ resource "aws_apigatewayv2_stage" "this" {
       responseLength          = "$context.responseLength"
       integrationErrorMessage = "$context.integrationErrorMessage"
     })
+  }
+
+  route_settings {
+    route_key              = "GET /counter"
+    throttling_burst_limit = 5
+    throttling_rate_limit  = 10
   }
 }
 

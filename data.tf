@@ -20,7 +20,18 @@ data "aws_iam_policy_document" "lambda" {
       "dynamodb:GetItem",
       "dynamodb:UpdateItem"
     ]
-    resources = [aws_dynamodb_table.this.arn]
+    resources = [aws_dynamodb_table.counter.arn]
+  }
+  statement {
+    sid    = "ReadAndAddVisitorTrackerTable"
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:PutItem"
+    ]
+    resources = [aws_dynamodb_table.tracker.arn]
   }
   statement {
     sid    = "WriteCloudWatchLogs"

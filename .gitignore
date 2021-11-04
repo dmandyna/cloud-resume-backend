@@ -3,3 +3,9 @@
 *.hcl
 .idea
 *.zip
+
+# VS Code Config
+*.code-workspace
+
+# Config files
+.DS_Store
