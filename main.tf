@@ -102,6 +102,11 @@ resource "aws_apigatewayv2_api" "this" {
   name                         = "cloudresume_lambda_gw"
   protocol_type                = "HTTP"
   disable_execute_api_endpoint = true
+
+  cors_configuration {
+    allow_origins = ["https://cv.dmandyna.co.uk"]
+    allow_methods = ["GET"]
+  }
 }
 
 resource "aws_apigatewayv2_stage" "this" {
