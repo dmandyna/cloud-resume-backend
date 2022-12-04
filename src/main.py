@@ -1,6 +1,5 @@
 import json
 import os
-import time
 from datetime import datetime, timedelta
 
 import boto3
@@ -41,7 +40,7 @@ def increase_counter(current_counter: int) -> str:
             ExpressionAttributeValues={":c": {"N": new_counter}},
             ReturnValues="UPDATED_NEW",
         )
-        print("The counter value has been successfuly updated.\n")
+        print("The counter value has been successfully updated.\n")
     except ClientError as e:
         print("Error message returned by AWS SDK:")
         raise Exception(e.response["Error"]["Message"])
